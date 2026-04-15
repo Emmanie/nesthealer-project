@@ -1,0 +1,160 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "NeatHealer API",
+    "version": "1.0.0",
+    "description": "Self-Healing Website Control Center — REST API"
+  },
+  "servers": [{ "url": "/api", "description": "Next.js API Routes" }],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "sb-access-token" }
+    }
+  },
+  "security": [{ "cookieAuth": [] }],
+  "paths": {
+    "/quota": {
+      "get": {
+        "summary": "Get quota and plan info",
+        "tags": ["Tenant"],
+        "responses": { "200": { "description": "Tenant quota and alert settings" } }
+      },
+      "patch": {
+        "summary": "Update alert settings",
+        "tags": ["Tenant"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "alert_slack_webhook": { "type": "string", "format": "uri" },
+              "alert_email":         { "type": "string", "format": "email" },
+              "alert_webhook":       { "type": "string", "format": "uri" }
+            }
+          }}}
+        },
+        "responses": { "200": { "description": "Updated" } }
+      }
+    },
+    "/modules": {
+      "get": {
+        "summary": "List monitored sites",
+        "tags": ["Modules"],
+        "responses": { "200": { "description": "Array of modules" } }
+      },
+      "post": {
+        "summary": "Add a site",
+        "tags": ["Modules"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "required": ["name", "url"],
+            "properties": {
+              "name": { "type": "string", "maxLength": 100 },
+              "url":  { "type": "string", "format": "uri" }
+            }
+          }}}
+        },
+        "responses": { "201": { "description": "Site added" }, "402": { "description": "Quota exceeded" } }
+      }
+    },
+    "/modules/{id}": {
+      "delete": {
+        "summary": "Delete a site",
+        "tags": ["Modules"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Deleted" } }
+      }
+    },
+    "/batch-import": {
+      "post": {
+        "summary": "Start a batch CSV import",
+        "tags": ["Batch"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "required": ["rows"],
+            "properties": { "rows": {
+              "type": "array",
+              "items": { "type": "object", "required": ["name","url"], "properties": { "name": { "type": "string" }, "url": { "type": "string", "format": "uri" } } }
+            }}
+          }}}
+        },
+        "responses": { "201": { "description": "Job created", "content": { "application/json": { "schema": { "type": "object", "properties": { "import_id": { "type": "string" } } } } } } }
+      }
+    },
+    "/batch-import/{id}": {
+      "get": {
+        "summary": "Poll import job status",
+        "tags": ["Batch"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Job status" } }
+      }
+    },
+    "/secrets": {
+      "get": {
+        "summary": "List configured AI providers (metadata only)",
+        "tags": ["Secrets"],
+        "responses": { "200": { "description": "Array of {id, provider, created_at}" } }
+      },
+      "post": {
+        "summary": "Add or replace an encrypted API key",
+        "tags": ["Secrets"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "required": ["provider", "api_key"],
+            "properties": {
+              "provider": { "type": "string", "enum": ["openai","claude","deepseek","gemini"] },
+              "api_key":  { "type": "string", "minLength": 10 }
+            }
+          }}}
+        },
+        "responses": { "201": { "description": "Key saved" } }
+      }
+    },
+    "/secrets/{id}": {
+      "delete": {
+        "summary": "Delete an API key",
+        "tags": ["Secrets"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Deleted" } }
+      }
+    },
+    "/admin/plan": {
+      "get": {
+        "summary": "List all tenants (super-admin only)",
+        "tags": ["Admin"],
+        "responses": { "200": { "description": "Array of tenants" }, "403": { "description": "Forbidden" } }
+      },
+      "put": {
+        "summary": "Update a tenant's plan",
+        "tags": ["Admin"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "required": ["tenant_id", "plan"],
+            "properties": {
+              "tenant_id":    { "type": "string", "format": "uuid" },
+              "plan":         { "type": "string", "enum": ["basic","premium","enterprise","unlimited","custom"] },
+              "custom_limit": { "type": "integer", "minimum": 1 }
+            }
+          }}}
+        },
+        "responses": { "200": { "description": "Updated" }, "403": { "description": "Forbidden" } }
+      }
+    },
+    "/sla": {
+      "get": {
+        "summary": "Fetch SLA metrics",
+        "tags": ["Analytics"],
+        "parameters": [{ "in": "query", "name": "limit", "schema": { "type": "integer", "default": 200, "maximum": 500 } }],
+        "responses": { "200": { "description": "Array of SLA metric rows" } }
+      }
+    }
+  }
+}

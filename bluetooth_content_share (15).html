@@ -1,0 +1,1 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/></head><body>CREATE TABLE jobs (<br>&nbsp; id UUID PRIMARY KEY DEFAULT gen_random_uuid(),<br>&nbsp; type TEXT NOT NULL,<br>&nbsp; payload JSONB,<br>&nbsp; status TEXT DEFAULT 'pending',<br>&nbsp; created_at TIMESTAMPTZ DEFAULT NOW()<br>);</body></html>
