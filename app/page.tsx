@@ -5,13 +5,12 @@ import { useState, useEffect } from "react";
 import {
   Shield, Zap, Activity, RefreshCw, Bell, Key,
   ArrowRight, CheckCircle, ChevronDown, Globe,
-  TrendingUp, Lock, Code, Cpu
+  TrendingUp, Lock, Code, Cpu, Loader2
 } from "lucide-react";
 
 // ── Navbar ───────────────────────────────────────────────────────────────────
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -31,7 +30,6 @@ function Navbar() {
       }}
     >
       <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
-        {/* Logo */}
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10,
@@ -46,7 +44,6 @@ function Navbar() {
           </span>
         </Link>
 
-        {/* Desktop nav */}
         <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="desktop-nav">
           {["Features", "How it Works", "Pricing"].map((item) => (
             <a
@@ -61,7 +58,6 @@ function Navbar() {
           ))}
         </div>
 
-        {/* CTA */}
         <div style={{ display: "flex", gap: 12 }}>
           <Link href="/login" className="btn-secondary" style={{ padding: "8px 18px", fontSize: 14 }}>
             Sign in
@@ -79,20 +75,17 @@ function Navbar() {
 function Hero() {
   return (
     <section className="mesh-bg" style={{ paddingTop: 120, paddingBottom: 100, textAlign: "center", position: "relative", overflow: "hidden" }}>
-      {/* Glow orbs */}
       <div style={{ position: "absolute", top: "20%", left: "10%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(124,58,237,0.15), transparent 70%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", top: "30%", right: "10%", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(56,189,248,0.1), transparent 70%)", pointerEvents: "none" }} />
 
       <div className="container" style={{ position: "relative" }}>
-        {/* Badge */}
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.3)", borderRadius: 20, marginBottom: 32 }}>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--emerald)", boxShadow: "0 0 8px var(--emerald)" }} />
           <span style={{ fontSize: 13, color: "var(--violet-light)", fontWeight: 500 }}>AI-Powered • Multi-Tenant • Always On</span>
         </div>
 
         <h1 style={{ fontSize: "clamp(36px, 6vw, 72px)", fontWeight: 900, lineHeight: 1.1, marginBottom: 24, letterSpacing: "-0.03em" }}>
-          Your Websites,{" "}
-          <span className="gradient-text">Always Online</span>
+          Your Websites, <span className="gradient-text">Always Online</span>
         </h1>
 
         <p style={{ fontSize: "clamp(16px, 2.5vw, 20px)", color: "var(--text-secondary)", maxWidth: 640, margin: "0 auto 40px", lineHeight: 1.7 }}>
@@ -108,7 +101,6 @@ function Hero() {
           </a>
         </div>
 
-        {/* Fake dashboard preview */}
         <div className="glass glass-violet animate-float" style={{ maxWidth: 780, margin: "0 auto", padding: 24, borderRadius: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
             <div style={{ width: 12, height: 12, borderRadius: "50%", background: "var(--rose)" }} />
@@ -116,7 +108,6 @@ function Hero() {
             <div style={{ width: 12, height: 12, borderRadius: "50%", background: "var(--emerald)" }} />
             <span style={{ marginLeft: 12, fontSize: 12, color: "var(--text-muted)" }}>dashboard.neathealer.app</span>
           </div>
-          {/* Stat row */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
             {[
               { label: "Sites", value: "8", color: "var(--violet-light)" },
@@ -130,7 +121,6 @@ function Hero() {
               </div>
             ))}
           </div>
-          {/* Site rows */}
           {[
             { name: "api.acme.com", status: "active", latency: "42ms" },
             { name: "shop.acme.com", status: "error", latency: "—" },
@@ -157,11 +147,11 @@ function Hero() {
 
 // ── Features ─────────────────────────────────────────────────────────────────
 const FEATURES = [
-  { icon: Activity, title: "Real-Time Monitoring", desc: "HTTP checks every 30 seconds per site. Instant detection of downtime, slow responses, and HTTP errors.", color: "var(--violet)" },
-  { icon: Cpu, title: "AI Auto-Repair", desc: "Multi-provider AI (OpenAI, Claude, DeepSeek, Gemini) decides the best action: repair, restart, or rollback.", color: "var(--sky)" },
-  { icon: Shield, title: "Circuit Breakers", desc: "After 3 consecutive failures the circuit opens for 60 seconds, preventing action storms and feedback loops.", color: "var(--emerald)" },
+  { icon: Cpu, title: "Intelligent Autonomy", desc: "Choose your level: Advisor (Insights), Guardian (Auto-restart), or Surgeon (AI Repair). Total control, absolute resilience.", color: "var(--violet)" },
+  { icon: Activity, title: "Real-Time Monitoring", desc: "HTTP checks every 30 seconds. Instant detection of downtime, slow responses, and HTTP errors.", color: "var(--sky)" },
+  { icon: Shield, title: "Guardian Watchdog", desc: "A separate process monitors the monitor. If the orchestrator stalls, the Guardian restarts it automatically.", color: "var(--emerald)" },
   { icon: RefreshCw, title: "Instant Rollback", desc: "Every config change is backed up. One command restores the last known-good state in seconds.", color: "var(--amber)" },
-  { icon: Bell, title: "Smart Alerts", desc: "Configurable Slack, email, and webhook notifications. Get alerted only when it matters.", color: "var(--rose)" },
+  { icon: Zap, title: "AI Surgeon Queue", desc: "Complex repairs are queued for approval or executed autonomously using DeepSeek-V3 & GPT-4o.", color: "var(--rose)" },
   { icon: TrendingUp, title: "SLA Analytics", desc: "MTTR charts, auto-repair success rates, and incident history — all in a beautiful mobile-first dashboard.", color: "var(--violet-light)" },
 ];
 
@@ -171,8 +161,7 @@ function Features() {
       <div className="container">
         <div style={{ textAlign: "center", marginBottom: 64 }}>
           <h2 style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 16 }}>
-            Everything you need to stay{" "}
-            <span className="gradient-text-emerald">online</span>
+            Everything you need to stay <span className="gradient-text-emerald">online</span>
           </h2>
           <p style={{ color: "var(--text-secondary)", fontSize: 17, maxWidth: 560, margin: "0 auto" }}>
             A complete self-healing stack — no DevOps team required.
@@ -216,9 +205,6 @@ function HowItWorks() {
               <div style={{ width: 56, height: 56, borderRadius: 14, background: "linear-gradient(135deg, var(--violet), var(--violet-dark))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 20, fontWeight: 900, color: "white", boxShadow: "0 8px 24px var(--violet-glow)" }}>
                 {step.num}
               </div>
-              {i < STEPS.length - 1 && (
-                <div style={{ position: "absolute", top: 28, left: "calc(50% + 40px)", right: "calc(-50% + 40px)", height: 1, background: "linear-gradient(90deg, var(--violet), transparent)", display: "none" }} />
-              )}
               <h3 style={{ fontWeight: 700, fontSize: 18, marginBottom: 10 }}>{step.title}</h3>
               <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.7 }}>{step.desc}</p>
             </div>
@@ -231,13 +217,43 @@ function HowItWorks() {
 
 // ── Pricing ──────────────────────────────────────────────────────────────────
 const PLANS = [
-  { name: "Basic", price: 0, sites: 1, features: ["1 monitored site", "30s check interval", "AI auto-repair", "Email alerts", "SLA dashboard"], highlighted: false },
-  { name: "Premium", price: 19, sites: 3, features: ["3 monitored sites", "30s check interval", "AI auto-repair", "Slack + email + webhook", "SLA analytics", "Batch CSV import"], highlighted: true },
-  { name: "Enterprise", price: 49, sites: 10, features: ["10 monitored sites", "30s check interval", "Priority AI decisions", "All alert channels", "Admin panel", "Custom API keys"], highlighted: false },
-  { name: "Unlimited", price: null, sites: 999999, features: ["Unlimited sites", "Custom check interval", "Dedicated support", "White-label option", "SLA guarantee", "Custom integrations"], highlighted: false },
+  { id: "basic",      name: "Basic",      price: 0,    sites: 1,      features: ["1 monitored site", "Advisor Mode (Insights)", "Email alerts", "SLA dashboard"], highlighted: false },
+  { id: "premium",    name: "Premium",    price: 19,   sites: 3,      features: ["3 monitored sites", "Guardian Mode (Auto-Fix)", "Slack + email + webhook", "7-day free trial"], highlighted: true },
+  { id: "enterprise", name: "Enterprise", price: 49,   sites: 10,     features: ["10 monitored sites", "AI Surgeon Mode (SQL Repair)", "Priority AI decisions", "Admin panel"], highlighted: false },
+  { id: "unlimited",  name: "Unlimited",  price: null, sites: 999999, features: ["Unlimited sites", "Full Autonomy Suite", "Dedicated support", "White-label option"], highlighted: false },
 ];
 
 function Pricing() {
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const handleCheckout = async (planId: string) => {
+    if (planId === "basic") {
+      window.location.href = "/login?mode=signup";
+      return;
+    }
+    
+    setLoading(planId);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planType: planId }),
+      });
+      const data = await res.json();
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        window.location.href = `/login?mode=signup&plan=${planId}`;
+      }
+    } catch (err) {
+      console.error("Checkout error", err);
+      window.location.href = "/login?mode=signup";
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <section id="pricing" style={{ padding: "100px 20px" }}>
       <div className="container">
@@ -286,13 +302,26 @@ function Pricing() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href={plan.price === null ? "mailto:hello@neathealer.app" : "/login?mode=signup"}
-                className={plan.highlighted ? "btn-primary" : "btn-secondary"}
-                style={{ width: "100%", justifyContent: "center" }}
-              >
-                {plan.price === 0 ? "Get started free" : plan.price === null ? "Contact sales" : `Start for $${plan.price}/mo`}
-              </Link>
+              
+              {plan.id === "enterprise" || plan.price === null ? (
+                <a 
+                  href="mailto:hello@neathealer.app" 
+                  className="btn-secondary" 
+                  style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}
+                >
+                  Contact sales
+                </a>
+              ) : (
+                <button
+                  onClick={() => handleCheckout(plan.id)}
+                  className={plan.highlighted ? "btn-primary" : "btn-secondary"}
+                  disabled={loading !== null}
+                  style={{ width: "100%", justifyContent: "center", gap: 8, cursor: "pointer" }}
+                >
+                  {loading === plan.id ? <Loader2 size={16} className="animate-spin" /> : null}
+                  {plan.price === 0 ? "Get started free" : `Start for $${plan.price}/mo`}
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -305,8 +334,8 @@ function Pricing() {
 function CTABanner() {
   return (
     <section style={{ padding: "80px 20px" }}>
-      <div className="container">
-        <div className="glass glass-violet" style={{ padding: "60px 40px", textAlign: "center", borderRadius: 20, background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(56,189,248,0.06))" }}>
+      <div className="container" style={{ textAlign: "center" }}>
+        <div className="glass glass-violet" style={{ padding: "60px 40px", borderRadius: 20, background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(56,189,248,0.06))" }}>
           <h2 style={{ fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 800, marginBottom: 16 }}>
             Ready to never worry about downtime again?
           </h2>

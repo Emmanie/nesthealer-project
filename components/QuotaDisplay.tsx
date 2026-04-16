@@ -41,9 +41,23 @@ export default function QuotaDisplay({ used, plan, customLimit }: Props) {
           transition: "width 0.6s ease",
         }} />
       </div>
-      <div style={{ marginTop: 6, fontSize: 11, color: "var(--text-muted)" }}>
-        {plan.charAt(0).toUpperCase() + plan.slice(1)} plan
-        {isNear && !isFull && <span style={{ marginLeft: 8, color: "var(--amber)" }}>— almost full, consider upgrading</span>}
+      <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+          {plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : "Basic"} plan
+          {isNear && !isFull && <span style={{ marginLeft: 8, color: "var(--amber)" }}>— almost full</span>}
+        </div>
+        <button 
+          onClick={async () => {
+            const res = await fetch("/api/stripe/portal", { method: "POST" });
+            const data = await res.json();
+            if (data.url) window.location.href = data.url;
+            else alert(data.error || "Could not open billing portal");
+          }}
+          className="btn-ghost" 
+          style={{ padding: "4px 8px", fontSize: 11, display: "flex", alignItems: "center", gap: 5 }}
+        >
+          Manage Billing
+        </button>
       </div>
     </div>
   );

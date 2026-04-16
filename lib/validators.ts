@@ -15,7 +15,15 @@ export const AddSiteSchema = z.object({
       (u) => u.startsWith("http://") || u.startsWith("https://"),
       "URL must start with http:// or https://"
     ),
-});
+  cloud_restart_hook: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  supabase_access_level: z.enum(["none", "anon", "service", "custom"]).default("none"),
+  supabase_url: z.string().url().optional().or(z.literal("")),
+  supabase_key: z.string().optional().or(z.literal("")),
+  supabase_terms_accepted: z.boolean().default(false),
+}).refine(
+  (data) => data.supabase_access_level === "none" || data.supabase_terms_accepted,
+  { message: "You must accept the terms to enable Supabase deep monitoring", path: ["supabase_terms_accepted"] }
+);
 export type AddSiteInput = z.infer<typeof AddSiteSchema>;
 
 // ── Batch CSV row ────────────────────────────────────────────────────────────
@@ -52,5 +60,6 @@ export const AlertSettingsSchema = z.object({
   alert_slack_webhook: z.string().url().optional().or(z.literal("")),
   alert_email:         z.string().email().optional().or(z.literal("")),
   alert_webhook:       z.string().url().optional().or(z.literal("")),
+  public_status_page:  z.boolean().optional(),
 });
 export type AlertSettingsInput = z.infer<typeof AlertSettingsSchema>;

@@ -1,18 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import MobileNav from "@/components/MobileNav";
 import SLAChart  from "@/components/SLAChart";
 import ActivityFeed from "@/components/ActivityFeed";
-import { TrendingUp, Clock, Zap, Loader2 } from "lucide-react";
+import { TrendingUp, Clock, Zap, Loader2, ArrowLeft } from "lucide-react";
 
 interface SLAEntry { module_id: string; incident_start: string; incident_end: string | null; auto_repaired: boolean; repair_duration_ms: number | null }
 
 export default function AnalyticsPage() {
   const [data,    setData]    = useState<SLAEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     fetch("/api/sla")
       .then((r) => r.json())
       .then((d) => { setData(d.metrics ?? []); setLoading(false); });
@@ -38,7 +41,10 @@ export default function AnalyticsPage() {
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <MobileNav active="analytics" />
-      <main style={{ flex: 1, padding: "24px 24px 100px" }}>
+      <main style={{ flex: 1, padding: "24px 24px 100px", minWidth: 0 }}>
+        <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-muted)", textDecoration: "none", fontSize: 13, marginBottom: 24, width: "fit-content" }} className="btn-ghost">
+          <ArrowLeft size={14} /> Back to Dashboard
+        </Link>
         <h1 style={{ fontWeight: 800, fontSize: 26, marginBottom: 8 }}>Analytics</h1>
         <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 32 }}>SLA metrics and auto-repair performance.</p>
 
@@ -94,7 +100,9 @@ export default function AnalyticsPage() {
                     return (
                       <tr key={row.module_id + row.incident_start} style={{ borderBottom: "1px solid var(--border)" }}>
                         <td style={{ padding: "10px 12px", fontFamily: "monospace", color: "var(--text-secondary)" }}>{row.module_id.slice(0, 8)}…</td>
-                        <td style={{ padding: "10px 12px", color: "var(--text-secondary)" }}>{new Date(row.incident_start).toLocaleString()}</td>
+                        <td style={{ padding: "10px 12px", color: "var(--text-secondary)" }}>
+                          {mounted ? new Date(row.incident_start).toLocaleString() : "—"}
+                        </td>
                         <td style={{ padding: "10px 12px" }}>{dur}</td>
                         <td style={{ padding: "10px 12px" }}>
                           <span style={{ color: row.auto_repaired ? "var(--emerald)" : "var(--rose)", fontWeight: 600 }}>

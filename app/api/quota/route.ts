@@ -11,7 +11,7 @@ export async function GET() {
   const supabase = await createAdminClient();
   const { data: tenant } = await supabase
     .from("tenants")
-    .select("id,name,plan,custom_limit,alert_slack_webhook,alert_email,alert_webhook")
+    .select("id,name,plan,custom_limit,alert_slack_webhook,alert_email,alert_webhook,public_status_page")
     .eq("user_id", user.id)
     .single();
 

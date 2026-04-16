@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import MobileNav from "@/components/MobileNav";
-import { ShieldCheck, Loader2, AlertTriangle } from "lucide-react";
+import PlatformHealth from "@/components/PlatformHealth";
+import SiteDiagnostics from "@/components/SiteDiagnostics";
+import { ShieldCheck, Loader2, AlertTriangle, Zap, ArrowLeft } from "lucide-react";
 
 interface Tenant { id: string; name: string; plan: string; custom_limit?: number; created_at: string }
 
 export default function AdminPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
   const [plan,    setPlan]    = useState("");
@@ -16,6 +20,7 @@ export default function AdminPage() {
   const [msg,     setMsg]     = useState("");
 
   useEffect(() => {
+    setMounted(true);
     // Only super-admins should reach this screen — enforced by service role key check in API
     fetch("/api/admin/plan").then((r) => r.json()).then((d) => { setTenants(d.tenants ?? []); setLoading(false); });
   }, []);
@@ -45,12 +50,32 @@ export default function AdminPage() {
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <MobileNav active="admin" />
-      <main style={{ flex: 1, padding: "24px 24px 100px" }}>
+      <main style={{ flex: 1, padding: "24px 24px 100px", minWidth: 0 }}>
+        <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-muted)", textDecoration: "none", fontSize: 13, marginBottom: 24, width: "fit-content" }} className="btn-ghost">
+          <ArrowLeft size={14} /> Back to Dashboard
+        </Link>
+
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
           <ShieldCheck size={28} color="var(--violet)" />
           <h1 style={{ fontWeight: 800, fontSize: 26 }}>Admin Panel</h1>
         </div>
-        <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 32 }}>Manage tenant plans and quotas.</p>
+        
+        <PlatformHealth />
+
+        <div style={{ marginTop: 32, marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
+          <Zap size={20} color="var(--amber)" />
+          <h2 style={{ fontSize: 18, fontWeight: 800 }}>Chaos Engineering & Site Diagnostics</h2>
+        </div>
+        <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 16 }}>
+          Monitor platform sites and inject synthetic failures to test resilience.
+        </p>
+        
+        <SiteDiagnostics />
+
+        <div style={{ marginTop: 40, marginBottom: 12 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 800 }}>Tenant & Plan Management</h2>
+          <p style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 4 }}>Manage active subscriptions and custom quotas.</p>
+        </div>
 
         {msg && <div style={{ marginBottom: 20, padding: "10px 16px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 8, color: "var(--emerald)", fontSize: 14 }}>{msg}</div>}
 
@@ -84,7 +109,9 @@ export default function AdminPage() {
                       ? <input className="input" type="number" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="Custom limit" style={{ width: 100 }} />
                       : t.custom_limit ?? "—"}
                   </td>
-                  <td style={{ padding: "12px 16px", color: "var(--text-muted)", fontSize: 12 }}>{new Date(t.created_at).toLocaleDateString()}</td>
+                  <td style={{ padding: "12px 16px", color: "var(--text-muted)", fontSize: 12 }}>
+                    {mounted ? new Date(t.created_at).toLocaleDateString() : "—"}
+                  </td>
                   <td style={{ padding: "12px 16px" }}>
                     {editing === t.id ? (
                       <div style={{ display: "flex", gap: 8 }}>

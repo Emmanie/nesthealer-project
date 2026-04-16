@@ -6,19 +6,26 @@ const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL ?? "";
 
 // GET /api/admin/plan — list all tenants (super-admin only)
 export async function GET() {
-  const user = await getUser();
-  if (!user || user.email !== SUPER_ADMIN_EMAIL) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  try {
+    const adminEmail = process.env.SUPER_ADMIN_EMAIL;
+    const supabase = await createAdminClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user || user.email !== adminEmail) {
+      return NextResponse.json({ error: "Forbidden", debug: { user: user?.email, expected: adminEmail } }, { status: 403 });
+    }
+
+    const { data: tenants, error } = await supabase
+      .from("tenants")
+      .select("id,name,plan,custom_limit,created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error(`PostgREST error: ${error.message}`);
+    return NextResponse.json({ tenants });
+  } catch (err: any) {
+    console.error("[ADMIN_PLAN_GET]", err);
+    return NextResponse.json({ error: err.message, stack: err.stack }, { status: 500 });
   }
-
-  const supabase = await createAdminClient();
-  const { data: tenants, error } = await supabase
-    .from("tenants")
-    .select("id,name,plan,custom_limit,created_at")
-    .order("created_at", { ascending: false });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ tenants });
 }
 
 // PUT /api/admin/plan — update a tenant's plan

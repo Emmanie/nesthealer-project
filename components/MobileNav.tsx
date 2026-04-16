@@ -31,6 +31,7 @@ export default function MobileNav({ active }: { active: string }) {
         borderRight: "1px solid var(--border)",
         display: "flex", flexDirection: "column",
         position: "sticky", top: 0, height: "100vh",
+        zIndex: 100, background: "var(--bg-dark)",
       }} className="desktop-sidebar">
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 36, padding: "0 8px" }}>
@@ -77,12 +78,12 @@ export default function MobileNav({ active }: { active: string }) {
         padding: "8px 0 max(8px, env(safe-area-inset-bottom))",
         height: "calc(64px + max(0px, env(safe-area-inset-bottom)))",
       }} className="mobile-nav">
-        {NAV_ITEMS.slice(0, 4).map(({ id, href, icon: Icon, label }) => {
+        {NAV_ITEMS.map(({ id, href, icon: Icon, label }) => {
           const isActive = active === id;
           return (
-            <Link key={id} href={href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, textDecoration: "none", minWidth: 44, padding: "4px 8px" }}>
-              <Icon size={20} color={isActive ? "var(--violet-light)" : "var(--text-muted)"} />
-              <span style={{ fontSize: 10, fontWeight: 600, color: isActive ? "var(--violet-light)" : "var(--text-muted)" }}>{label}</span>
+            <Link key={id} href={href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", minWidth: 46, padding: "4px" }}>
+              <Icon size={18} color={isActive ? "var(--violet-light)" : "var(--text-muted)"} />
+              <span style={{ fontSize: 9, fontWeight: 600, color: isActive ? "var(--violet-light)" : "var(--text-muted)", textAlign: "center" }}>{label}</span>
             </Link>
           );
         })}

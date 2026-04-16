@@ -1,17 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import StatusBadge from "./StatusBadge";
+import AutonomySwitch from "./AutonomySwitch";
 import { Globe, Trash2, Clock, AlertCircle, ExternalLink, Loader2 } from "lucide-react";
 
 interface Module {
   id: string; name: string; url: string; status: string;
+  autonomy_level: "advisor" | "guardian" | "surgeon";
   error_count: number; last_success: string | null; last_error: string | null;
 }
 
-export default function SiteList({ modules, onRefresh }: { modules: Module[]; onRefresh: () => void }) {
+export default function SiteList({ modules, plan, onRefresh }: { modules: Module[]; plan: string; onRefresh: () => void }) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirm,  setConfirm]  = useState<string | null>(null);
+  const [mounted,  setMounted]  = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleDelete = async (id: string) => {
     setDeleting(id);
@@ -59,7 +66,7 @@ export default function SiteList({ modules, onRefresh }: { modules: Module[]; on
               )}
               {m.last_success && (
                 <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--text-muted)" }}>
-                  <Clock size={12} /> {new Date(m.last_success).toLocaleTimeString()}
+                  <Clock size={12} /> {mounted ? new Date(m.last_success).toLocaleTimeString() : "—"}
                 </div>
               )}
               {confirm === m.id ? (
@@ -74,6 +81,14 @@ export default function SiteList({ modules, onRefresh }: { modules: Module[]; on
                   <Trash2 size={15} />
                 </button>
               )}
+            </div>
+          </div>
+
+          {/* Bottom row: Autonomy Switch + Error Detail */}
+          <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+               <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Autonomy:</span>
+               <AutonomySwitch moduleId={m.id} initialLevel={m.autonomy_level} userPlan={plan} onUpdate={onRefresh} />
             </div>
           </div>
 

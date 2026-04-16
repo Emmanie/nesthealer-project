@@ -1,5 +1,5 @@
 {
-  "openapi": "3.1.0",
+  "openapi": "3.0.3",
   "info": {
     "title": "NeatHealer API",
     "version": "1.0.0",
@@ -17,10 +17,10 @@
       "get": {
         "summary": "Get quota and plan info",
         "tags": ["Tenant"],
-        "responses": { "200": { "description": "Tenant quota and alert settings" } }
+        "responses": { "200": { "description": "Tenant quota, alert settings, and public status toggle" } }
       },
       "patch": {
-        "summary": "Update alert settings",
+        "summary": "Update alert settings and preferences",
         "tags": ["Tenant"],
         "requestBody": {
           "required": true,
@@ -29,7 +29,8 @@
             "properties": {
               "alert_slack_webhook": { "type": "string", "format": "uri" },
               "alert_email":         { "type": "string", "format": "email" },
-              "alert_webhook":       { "type": "string", "format": "uri" }
+              "alert_webhook":       { "type": "string", "format": "uri" },
+              "public_status_page":  { "type": "boolean" }
             }
           }}}
         },
@@ -52,7 +53,8 @@
             "required": ["name", "url"],
             "properties": {
               "name": { "type": "string", "maxLength": 100 },
-              "url":  { "type": "string", "format": "uri" }
+              "url":  { "type": "string", "format": "uri" },
+              "cloud_restart_hook": { "type": "string", "format": "uri", "description": "Vercel/Netlify deploy hook" }
             }
           }}}
         },
@@ -65,6 +67,104 @@
         "tags": ["Modules"],
         "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string", "format": "uuid" } }],
         "responses": { "200": { "description": "Deleted" } }
+      }
+    },
+    "/playbooks": {
+      "get": {
+        "summary": "List automated Playbook rules",
+        "tags": ["Playbooks"],
+        "responses": { "200": { "description": "Array of rules" } }
+      },
+      "post": {
+        "summary": "Create a new human-override rule",
+        "tags": ["Playbooks"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "required": ["name", "action_type", "conditions"],
+            "properties": {
+              "name": { "type": "string" },
+              "action_type": { "type": "string", "enum": ["restart", "rollback", "kill", "ignore", "notify"] },
+              "conditions": { "type": "object", "description": "JSON criteria matching module states" }
+            }
+          }}}
+        },
+        "responses": { "201": { "description": "Rule created" } }
+      }
+    },
+    "/playbooks/{id}": {
+      "delete": {
+        "summary": "Delete a rule",
+        "tags": ["Playbooks"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Deleted" } }
+      }
+    },
+    "/webhooks": {
+      "get": {
+        "summary": "List outgoing webhooks",
+        "tags": ["Webhooks"],
+        "responses": { "200": { "description": "Array of webhooks" } }
+      },
+      "post": {
+        "summary": "Register an external destination",
+        "tags": ["Webhooks"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "required": ["name", "url"],
+            "properties": {
+              "name": { "type": "string" },
+              "url": { "type": "string", "format": "uri" }
+            }
+          }}}
+        },
+        "responses": { "201": { "description": "Webhook added" } }
+      }
+    },
+    "/webhooks/{id}": {
+      "delete": {
+        "summary": "Remove a webhook",
+        "tags": ["Webhooks"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Deleted" } }
+      }
+    },
+    "/activity": {
+      "get": {
+        "summary": "Fetch AI decision stream",
+        "tags": ["Analytics"],
+        "responses": { "200": { "description": "Recent actions with feedback status" } }
+      }
+    },
+    "/feedback": {
+      "post": {
+        "summary": "Vote on AI decision quality",
+        "tags": ["Analytics"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "required": ["action_log_id", "module_id", "feedback"],
+            "properties": {
+              "action_log_id": { "type": "string", "format": "uuid" },
+              "module_id": { "type": "string", "format": "uuid" },
+              "feedback": { "type": "boolean" }
+            }
+          }}}
+        },
+        "responses": { "201": { "description": "Feedback recorded" } }
+      }
+    },
+    "/status/{tenantId}": {
+      "get": {
+        "summary": "Public status data (Anonymous)",
+        "tags": ["Public"],
+        "security": [],
+        "parameters": [{ "in": "path", "name": "tenantId", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Uptime data" }, "403": { "description": "Page is private" } }
       }
     },
     "/batch-import": {

@@ -8,10 +8,15 @@ import SiteList      from "@/components/SiteList";
 import AddSiteForm   from "@/components/AddSiteForm";
 import BatchImport   from "@/components/BatchImport";
 import StatusBadge   from "@/components/StatusBadge";
+import SurgeonQueue from "@/components/SurgeonQueue";
 import { Activity, Plus, Upload, RefreshCw, Loader2 } from "lucide-react";
 
 interface Tenant { id: string; name: string; plan: string; custom_limit?: number }
-interface Module  { id: string; name: string; url: string; status: string; error_count: number; last_success: string | null; last_error: string | null }
+interface Module  { 
+  id: string; name: string; url: string; status: string; 
+  autonomy_level: "advisor" | "guardian" | "surgeon"; 
+  error_count: number; last_success: string | null; last_error: string | null 
+}
 
 export default function DashboardPage() {
   const supabase = createClient();
@@ -68,7 +73,7 @@ export default function DashboardPage() {
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <MobileNav active="dashboard" />
 
-      <main style={{ flex: 1, padding: "24px 24px 100px", maxWidth: "100%", overflow: "hidden" }}>
+      <main style={{ flex: 1, padding: "24px 24px 100px", maxWidth: "100%", overflow: "hidden", minWidth: 0 }}>
         {/* Chaos banner */}
         {chaosBanner && (
           <div style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 10, padding: "12px 20px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10, color: "var(--amber)", fontSize: 14 }}>
@@ -121,7 +126,8 @@ export default function DashboardPage() {
         )}
 
         {/* Site list */}
-        <SiteList modules={modules} onRefresh={load} />
+        <SurgeonQueue onReload={load} />
+        <SiteList modules={modules} plan={tenant?.plan || "basic"} onRefresh={load} />
 
         {/* Modals */}
         {showAdd    && <AddSiteForm   onClose={() => { setShowAdd(false);    load(); }} />}

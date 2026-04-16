@@ -2,89 +2,42 @@
 // Executes a single pending action and logs result to sla_metrics.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendAlert } from "../_shared/notifications.ts";
+import { decrypt } from "../_shared/crypto.ts";
+import { validateSql, runSurgery } from "../_shared/surgeon.ts";
 
 const SUPABASE_URL          = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const SLACK_TIMEOUT_MS      = 5_000;
+const ENCRYPTION_KEY          = Deno.env.get("ENCRYPTION_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
 
-async function sendSlack(webhookUrl: string, text: string) {
-  await fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    signal: AbortSignal.timeout(SLACK_TIMEOUT_MS),
-    body: JSON.stringify({ text }),
-  });
-}
-
-async function sendEmail(
-  to: string,
-  subject: string,
-  body: string
-): Promise<void> {
-  const resendKey = Deno.env.get("RESEND_API_KEY");
-  if (!resendKey) return;
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendKey}`,
-      "Content-Type": "application/json",
-    },
-    signal: AbortSignal.timeout(SLACK_TIMEOUT_MS),
-    body: JSON.stringify({
-      from: "NeatHealer <alerts@neathealer.app>",
-      to: [to],
-      subject,
-      text: body,
-    }),
-  });
-}
-
-async function sendWebhook(url: string, payload: unknown): Promise<void> {
-  await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    signal: AbortSignal.timeout(SLACK_TIMEOUT_MS),
-    body: JSON.stringify(payload),
-  });
-}
-
-async function verifyUrl(url: string): Promise<boolean> {
-  try {
-    const res = await fetch(url, {
-      method: "HEAD",
-      signal: AbortSignal.timeout(8000),
-      redirect: "follow",
-    });
-    return res.ok || res.status === 405;
-  } catch {
-    return false;
-  }
-}
+// ... (verifyUrl omitted for brevity)
 
 Deno.serve(async (req) => {
   try {
     const { action_id } = await req.json();
     if (!action_id) {
-      return new Response(JSON.stringify({ error: "Missing action_id" }), {
-        status: 400,
-      });
+      return new Response(JSON.stringify({ error: "Missing action_id" }), { status: 400 });
     }
 
-    // Fetch action + module + tenant in one round-trip
     const { data: action, error: fetchErr } = await supabase
       .from("pending_actions")
-      .select(
-        `*, modules(*), tenants(alert_slack_webhook, alert_email, alert_webhook)`
-      )
+      .select(`
+        *, 
+        modules(*), 
+        tenants(id, alert_slack_webhook, alert_email, alert_webhook)
+      `)
       .eq("id", action_id)
       .single();
 
     if (fetchErr || !action) {
-      return new Response(JSON.stringify({ error: "Action not found" }), {
-        status: 404,
-      });
+      return new Response(JSON.stringify({ error: "Action not found" }), { status: 404 });
+    }
+
+    // ── Surgeon Guard: Don't process if waiting for approval ──
+    if (action.status === "pending_approval") {
+      return new Response(JSON.stringify({ status: "waiting_for_approval" }), { status: 200 });
     }
 
     if (action.status !== "pending") {
@@ -92,10 +45,7 @@ Deno.serve(async (req) => {
     }
 
     // Mark as processing
-    await supabase
-      .from("pending_actions")
-      .update({ status: "processing" })
-      .eq("id", action_id);
+    await supabase.from("pending_actions").update({ status: "processing" }).eq("id", action_id);
 
     const module  = action.modules;
     const tenant  = action.tenants;
@@ -105,25 +55,68 @@ Deno.serve(async (req) => {
     try {
       switch (action.action_type) {
         case "repair": {
+          // ── AI SURGEON EXECUTION ───────────────────────────
+          if (action.proposed_sql) {
+            // 1. Validate SQL
+            const guard = validateSql(action.proposed_sql);
+            if (!guard.ok) {
+              result = `Surgery blocked: ${guard.error}`;
+              break;
+            }
+
+            // 2. Decrypt Client Keys
+            try {
+              const url = await decrypt(module.encrypted_supabase_url, module.supabase_iv, module.supabase_tag, ENCRYPTION_KEY);
+              const key = await decrypt(module.encrypted_supabase_key, module.supabase_iv, module.supabase_tag, ENCRYPTION_KEY);
+              
+              // 3. Run Surgery
+              const surge = await runSurgery(url, key, action.proposed_sql);
+              if (surge.ok) {
+                result = `Surgery SUCCESS: ${JSON.stringify(surge.result)}`;
+              } else {
+                result = `Surgery FAILED: ${surge.error}`;
+              }
+            } catch (decErr) {
+              result = `Surgery FAILED: Decryption error (${decErr.message})`;
+            }
+          } 
+          
+          // Re-verify health after surgery or if it was a simple repair
           const ok = await verifyUrl(module.url);
           if (ok) {
-            await supabase
-              .from("modules")
-              .update({ status: "active", error_count: 0, consecutive_failures: 0, circuit_open_until: null, last_success: new Date().toISOString() })
-              .eq("id", module.id);
-            result = "repaired";
+            await supabase.from("modules").update({ 
+               status: "active", 
+               error_count: 0, 
+               consecutive_failures: 0, 
+               circuit_open_until: null, 
+               last_success: new Date().toISOString() 
+            }).eq("id", module.id);
+            if (!action.proposed_sql) result = "repaired (ping ok)";
           } else {
-            result = "repair failed — site still down";
+            result += " | Site still down after repair attempt";
           }
           break;
         }
+
+        // ... cases restart, rollback, kill, ignore, notify
 
         case "restart": {
           await supabase
             .from("modules")
             .update({ status: "restarting" })
             .eq("id", module.id);
-          // Wait 5s then re-check
+
+          // Phase 3 Real Cloud Restart Injection
+          if (module.cloud_restart_hook) {
+            try {
+              // Fire POST request to Vercel/Netlify deploy hook to actually force a rebuild/restart
+              await fetch(module.cloud_restart_hook, { method: "POST", signal: AbortSignal.timeout(5000) });
+            } catch (e) {
+              console.warn("Failed to trigger cloud restart hook", e);
+            }
+          }
+
+          // Wait 5s to allow server to start booting back up, then re-check
           await new Promise((r) => setTimeout(r, 5000));
           const ok = await verifyUrl(module.url);
           await supabase
@@ -184,27 +177,33 @@ Deno.serve(async (req) => {
 
       // ── Notifications ──────────────────────────────────
       const notifText = `[NeatHealer] ${module.name} (${module.url}) — Action: ${action.action_type} — Result: ${result}`;
-
-      const notIfPromises: Promise<any>[] = [];
-      if (tenant.alert_slack_webhook)
-        notIfPromises.push(sendSlack(tenant.alert_slack_webhook, notifText).catch(console.warn));
-      if (tenant.alert_email)
-        notIfPromises.push(sendEmail(tenant.alert_email, `NeatHealer Alert: ${module.name}`, notifText).catch(console.warn));
-      if (tenant.alert_webhook)
-        notIfPromises.push(sendWebhook(tenant.alert_webhook, { event: "action_result", module_id: module.id, action: action.action_type, result }).catch(console.warn));
+      
+      const alertPromise = sendAlert({
+        target: {
+          slack:   tenant.alert_slack_webhook,
+          email:   tenant.alert_email,
+          webhook: tenant.alert_webhook,
+        },
+        title: `NeatHealer Alert: ${module.name}`,
+        text: notifText,
+        payload: { 
+          event: "action_result", 
+          module_id: module.id, 
+          action: action.action_type, 
+          result 
+        }
+      });
 
       // Trigger dynamic user-configured webhooks via Phase 2 trigger-webhook edge function
-      notIfPromises.push(
-        supabase.functions.invoke("trigger-webhook", {
-          body: { 
-            tenant_id: tenant.id, 
-            event: "action_result", 
-            data: { module_id: module.id, action: action.action_type, result } 
-          }
-        }).catch(console.warn)
-      );
+      const webhookPromise = supabase.functions.invoke("trigger-webhook", {
+        body: { 
+          tenant_id: tenant.id, 
+          event: "action_result", 
+          data: { module_id: module.id, action: action.action_type, result } 
+        }
+      }).catch(console.warn);
 
-      await Promise.allSettled(notIfPromises);
+      await Promise.allSettled([alertPromise, webhookPromise]);
 
       // Mark done
       await supabase

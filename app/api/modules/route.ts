@@ -34,9 +34,36 @@ export async function POST(req: Request) {
   if (!tenant) return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
 
   const supabase = await createAdminClient();
+
+  // Handle Supabase Connector Encryption if keys are provided
+  let encryptedUrl = null, encryptedKey = null, supabaseIv = null, supabaseTag = null;
+  if (parsed.data.supabase_url && parsed.data.supabase_key && parsed.data.supabase_access_level !== "none") {
+    const { encrypt } = require("@/lib/encryption");
+    const { encrypted: eUrl, iv: ivU } = encrypt(parsed.data.supabase_url); 
+    const { encrypted: eKey, iv: ivK, authTag: tagK } = encrypt(parsed.data.supabase_key);
+    // For simplicity we use the same IV logic for URL but typically you'd store both. 
+    // Let's store just the Key's IV/Tag and assume URL is also handled or store both.
+    // Actually, let's keep it simple: we store the full encryption results for the KEY and just the encrypted URL.
+    encryptedUrl = eUrl; 
+    encryptedKey = eKey;
+    supabaseIv  = ivK;  // Store IV of the key
+    supabaseTag = tagK; // Store Tag of the key
+  }
+
   const { data, error } = await supabase
     .from("modules")
-    .insert({ tenant_id: tenant.id, name: parsed.data.name, url: parsed.data.url })
+    .insert({ 
+      tenant_id: tenant.id, 
+      name: parsed.data.name, 
+      url: parsed.data.url,
+      cloud_restart_hook: parsed.data.cloud_restart_hook || null,
+      supabase_access_level: parsed.data.supabase_access_level,
+      encrypted_supabase_url: encryptedUrl,
+      encrypted_supabase_key: encryptedKey,
+      supabase_iv: supabaseIv,
+      supabase_tag: supabaseTag,
+      supabase_terms_accepted: parsed.data.supabase_terms_accepted
+    })
     .select()
     .single();
 

@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import MobileNav    from "@/components/MobileNav";
 import ApiKeyManager from "@/components/ApiKeyManager";
 import AlertConfig  from "@/components/AlertConfig";
-import { Webhook, Settings, Key, Bell, Loader2 } from "lucide-react";
+import { Webhook, Settings, Key, Bell, Loader2, ArrowLeft } from "lucide-react";
 import WebhookConfig from "@/components/WebhookConfig";
 
 export default function SettingsPage() {
@@ -14,6 +15,9 @@ export default function SettingsPage() {
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <MobileNav active="settings" />
       <main style={{ flex: 1, padding: "24px 24px 100px", maxWidth: 720 }}>
+        <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-muted)", textDecoration: "none", fontSize: 13, marginBottom: 24, width: "fit-content" }} className="btn-ghost">
+          <ArrowLeft size={14} /> Back to Dashboard
+        </Link>
         <h1 style={{ fontWeight: 800, fontSize: 26, marginBottom: 8 }}>Settings</h1>
         <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 32 }}>
           Configure your AI keys and alert channels.
