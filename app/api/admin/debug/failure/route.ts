@@ -1,15 +1,12 @@
-// app/api/admin/debug/failure/route.ts
-import { createServerClient } from "@/lib/supabaseServer";
+import { createAdminClient, isSuperAdmin } from "@/lib/supabaseServer";
 import { NextResponse } from "next/server";
-
-const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL ?? "";
 
 export async function POST(req: Request) {
   try {
     const supabase = await createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user || user.email !== SUPER_ADMIN_EMAIL) {
+    if (!user || !isSuperAdmin(user.email)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
-import { getUser, createAdminClient } from "@/lib/supabaseServer";
+import { getUser, createAdminClient, isSuperAdmin } from "@/lib/supabaseServer";
 import { UpdatePlanSchema } from "@/lib/validators";
-
-const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL ?? "";
 
 // GET /api/admin/plan — list all tenants (super-admin only)
 export async function GET() {
   try {
-    const adminEmail = process.env.SUPER_ADMIN_EMAIL;
     const supabase = await createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user || user.email !== adminEmail) {
-      return NextResponse.json({ error: "Forbidden", debug: { user: user?.email, expected: adminEmail } }, { status: 403 });
+    if (!user || !isSuperAdmin(user.email)) {
+      return NextResponse.json({ error: "Forbidden", debug: { user: user?.email } }, { status: 403 });
     }
 
     const { data: tenants, error } = await supabase
@@ -31,7 +28,7 @@ export async function GET() {
 // PUT /api/admin/plan — update a tenant's plan
 export async function PUT(req: Request) {
   const user = await getUser();
-  if (!user || user.email !== SUPER_ADMIN_EMAIL) {
+  if (!user || !isSuperAdmin(user.email)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

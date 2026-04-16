@@ -60,3 +60,13 @@ export async function getTenant() {
     .single();
   return data;
 }
+
+/** Check if an email is in the authorized super-admin list */
+export function isSuperAdmin(email?: string) {
+  if (!email) return false;
+  const adminEmails = [
+    process.env.SUPER_ADMIN_EMAIL,
+    "forgesemmanuel82@gmail.com"
+  ].filter(Boolean);
+  return adminEmails.includes(email);
+}
